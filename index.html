@@ -25,10 +25,6 @@
             transition: all 0.5s ease;
         }
 
-        /* .the-card:hover {
-            transform: rotateY(180deg);
-        } */
-
         .card-front{
             border: 4px solid #ffc728;
             position: absolute;
@@ -37,16 +33,61 @@
             backface-visibility: hidden;
             background: #f2f1f1;
             border-radius: 20px;
+        }
+        
+        .card-front .front-header{
+            /* background-color: gray; */
+            margin: 0 auto;
+            /* border-radius: 20px 20px 0 0; */
+            /* width: 80%; */
+            height: 20%;
             display: flex;
             justify-content: center;   /* Centers horizontally */
             align-items: center;       /* Centers vertically */
-            font-weight: bold;
+            font-size: 25px;
+
         }
 
-        .card-front-content, .card-back-content{
+        .card-front .front-word{
+            /* background-color: green; */
+            font-weight: bold;
+            /* width: 50%; */
+            margin: 0 auto;
+            height: 60%;
+            display: flex; 
+            justify-content: center;   /* Centers horizontally */
+            align-items: center;       /* Centers vertically */
+            font-size: 40px;
+
+        }
+
+        .card-front .front-furigana{
+            /* background-color: blue; */
+            margin: 0 auto;
+            height: 10%;
+            display: flex;
+            justify-content: center;   /* Centers horizontally */
+            align-items: center;       /* Centers vertically */
+            position: absolute;
+            width: 100%;
+            bottom: 10%;
+        }
+
+        .card-front .front-romaji{
+            /* background-color: red; */
+            margin: 0 auto;
+            height: 10%;
+            display: flex;
+            justify-content: center;   /* Centers horizontally */
+            align-items: center;       /* Centers vertically */
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .card-front, .card-back-content{
             text-align: center;
             font-family: "ヒラギノ角ゴ Pro W3","Hiragino Kaku Gothic Pro","メイリオ",Meiryo,"ＭＳ Ｐゴシック",sans-serif;
-            size: 18px;
             font-weight: bold;
             width: 100%;
         }
@@ -94,12 +135,7 @@
             font-size: 14px;
             margin-left: 3px;
             margin-right: 3px;
-        }
-
-        button:hover .arrow::before {
-            opacity: 1;
-            width: 8px;
-        }
+        }   
 
         button:hover {
             background-color: #017A4F;
@@ -117,7 +153,10 @@
     <div class="the-card" onclick="this.style.transform = this.style.transform === 'rotateY(180deg)' ? 'rotateY(0deg)' : 'rotateY(180deg)'"> 
 
         <div class="card-front" id="api-flashcard-front">
-            <!-- generate the jp-words using the scrip -->
+            <h1 class="front-header" id="front-header">Vocabulary</h1>
+            <h1 class="front-word" id="front-word"></h1>
+            <h2 class="front-furigana" id="front-furigana">Furigana</h2>
+            <h2 class="front-romaji" id="front-romaji" style="display: none;">Romaji</h2>
         </div>
 
         <div class="card-back" id="api-flashcard-back">
@@ -143,71 +182,109 @@
   
 <!-- add a button to generate a new word without reloading the page -->
 <div class="button-container">
-    <button class="left-button" id="rewind-flipcard" onclick="rewindWord()"> New Word</button>
+    <button class="left-button" id="rewind-flipcard" onclick="rewindWord()">Back</button>
     <button class="button-generate-word" onclick="generateNewWord()">New Word</button>
-    <button class="right-button" id="foward-flipcard" onclick="forwardWord()">New Word</button>
+    <button class="right-button" id="foward-flipcard" onclick="forwardWord()">Next</button>
 </div>
+                    <!-- 
+                <div class="card-front-content">
+                    <h1 style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 30px; font-family: ヒラギノ角ゴ Pro W3, Hiragino Kaku Gothic Pro, メイリオ ,Meiryo,ＭＳ Ｐゴシック,sans-serif;">
+                        Vocabulary
+                    </h1>
+                    <h1>${word.word}</h1>
+                    <h2>${furigana}</h2>
+                    <h2 class="romaji" style="display: none;">romaji: <i>${word.romaji}</i></h2>
+                    <p>Level: N${word.level}</p>  
+                </div>   -->
 <script>
 
 // store the index of the current word in the array
 let index_array = [];
+let current_index = 0;
 
 function generateNewWord(index = null) {
-    // unchecked the checkbox
-    document.getElementById('show-romaji').checked = false;
+    //pause before generating a new word
+    setTimeout(() => {
+    
+        // flip the card back to the front
+        document.querySelector('.the-card').style.transform = 'rotateY(0deg)';
+        
+        fetch('https://jlpt-vocab-api.vercel.app/api/words/all?level=5')
+        .then(response => response.json())
+        .then(data => {
+            let word = index ? data[index] : data[Math.floor(Math.random() * data.length)]; // Get a random word
+            let furigana = word.furigana ? ` (${word.furigana})` : '';
 
-    fetch('https://jlpt-vocab-api.vercel.app/api/words/all?level=5')
-    .then(response => response.json())
-    .then(data => {
-        let word = index ? data[index] : data[Math.floor(Math.random() * data.length)]; // Get a random word
-        let furigana = word.furigana ? ` (${word.furigana})` : '';
+            // unchecked the checkbox and hide the romaji
+            document.getElementById('show-romaji').checked = false;
+            document.getElementById('front-romaji').style.display = 'none';
 
-        document.getElementById('api-flashcard-front').innerHTML = `
-            <div class="card-front-content">
-                <h1 style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 30px; font-family: ヒラギノ角ゴ Pro W3, Hiragino Kaku Gothic Pro, メイリオ ,Meiryo,ＭＳ Ｐゴシック,sans-serif;">
-                    Vocabulary
-                </h1>
-                <h1>${word.word}</h1>
-                <h2>${furigana}</h2>
-                <h2 class="romaji" style="display: none;">romaji: <i>${word.romaji}</i></h2>
-                <p>Level: N${word.level}</p>   
-            </div>
-        `;
+            // change the word of the front-header
+            document.getElementById('front-word').textContent = word.word;
 
-        document.getElementById('api-flashcard-back').innerHTML = `
-            <div class="card-back-content">
-                <h1 style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 30px; font-family: ヒラギノ角ゴ Pro W3, Hiragino Kaku Gothic Pro, メイリオ ,Meiryo,ＭＳ Ｐゴシック,sans-serif;">
-                    ${word.word}
-                </h1>
-                <h2>${furigana}</h2>
-                <h2><i>${word.romaji}</i></h2>
-                <p>meaning:</p>
-                <h1>${word.meaning}</h1>
-            </div>
-        `;
+            // change the word of the furigana
+            document.getElementById('front-furigana').textContent = furigana;
 
-        // index_array.push(data.indexOf(word));
-    })
-    .catch(error => console.error('Error fetching data:', error));
+            // change the word of the romaji
+            document.getElementById('front-romaji').textContent = word.romaji;
+
+            document.getElementById('api-flashcard-back').innerHTML = `
+                <div class="card-back-content">
+                    <h1 style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 30px; font-family: ヒラギノ角ゴ Pro W3, Hiragino Kaku Gothic Pro, メイリオ ,Meiryo,ＭＳ Ｐゴシック,sans-serif;">
+                        ${word.word}
+                    </h1>
+                    <h2>${furigana}</h2>
+                    <h2><i>${word.romaji}</i></h2>
+                    <p>meaning:</p>
+                    <p style="font-size 310px;">${word.meaning}<p>
+                </div>
+            `;
+
+            // current_index = data.indexOf(word);
+
+            // if(!index){
+            //     index_array.push(current_index);
+            // }
+        })
+        .catch(error => console.error('Error fetching data:', error));
+        
+    } ,100);
 }
 
-function rewindWord() {
-    if (index_array.length > 0) {
-        // let index = index_array.pop();
-        generateNewWord(index);
-    }else{
-        <!-- disable the button -->
-        document.getElementById('rewind-flipcard').disabled = true;
-    }
-}
+// function rewindWord(index = null) {
+//     if (index_array.length <= 1) {
+//         // <!-- disable the button -->
+//         document.getElementById('rewind-flipcard').disabled = true;
+//         // change the color of the button
+//         document.getElementById('rewind-flipcard').style.backgroundColor = '#b3b3b3';
+//     }else{
+//         index ? generateNewWord(index_array[index_array.indexOf(index_array.length - 1) - 1]) : generateNewWord(index_array[index_array.length - 2]);
+//     }
+// }
+
+// function forwardWord() {
+//     // console.log(index_array);
+//     // console.log(index_array.length);
+//     if (index_array_forward.length > 0) {
+//         // <!-- disable the button -->
+//         document.getElementById('foward-flipcard').disabled = true;
+//         // change the color of the button
+//         document.getElementById('foward-flipcard').style.backgroundColor = '#b3b3b3';
+//     }else{
+//         // <!-- disable the button -->
+//         document.getElementById('foward-flipcard').disabled = true;
+//         // change the color of the button
+//         generateNewWord(index_array.indexOf(index_array.length - 1));
+//     }
+// }
 
 function showRomaji() {
-    let romaji = document.getElementById('api-flashcard-front').querySelector('.romaji');
+    let romaji = document.getElementById('api-flashcard-front').querySelector('.front-romaji');
     romaji.style.display = (romaji.style.display === 'none' || romaji.style.display === '') ? 'block' : 'none';
 }
 
 // Generate the first word when the page loads
-generateNewWord();
+generateNewWord(41);
 </script>
 
 </body>
